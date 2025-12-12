@@ -6,7 +6,7 @@ services:
     container_name: moviedb
     restart: always
     env_file:
-      - .env
+      - db.properties
     ports:
       - "5432:5432"
     environment:
