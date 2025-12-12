@@ -6,8 +6,8 @@ import com.app.movie.Models.User;
 
 import com.app.movie.Repositories.UserRepository;
 import jakarta.validation.Valid;
-import com.app.movie.DTO.LoginRequestDTO;
-import com.app.movie.DTO.LoginResponseDTO;
+import com.app.movie.DTO.auth.LoginRequestDTO;
+import com.app.movie.DTO.auth.LoginResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;

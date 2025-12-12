@@ -1,4 +1,4 @@
-package com.app.movie.DTO;
+package com.app.movie.DTO.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -20,6 +20,4 @@ public class UserDTO {
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
-
-    // Getters and Setters
 }

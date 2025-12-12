@@ -1,13 +1,13 @@
 package com.app.movie.Controllers;
 
-import com.app.movie.DTO.UserDTO;
+import com.app.movie.DTO.auth.UserDTO;
 
 import com.app.movie.Security.JwtTokenProvider;
 import com.app.movie.Models.Role;
 import com.app.movie.Models.User;
 import com.app.movie.Repositories.RoleRepository;
 import com.app.movie.Repositories.UserRepository;
-import com.app.movie.DTO.RegistrationResponse;
+import com.app.movie.DTO.auth.RegistrationResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +61,6 @@ public class RegistrationController {
                 .collect(java.util.stream.Collectors.toSet());
         String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
 
-        return ResponseEntity.ok(new RegistrationResponse(user.getId(), user.getName(), user.getEmail(), token));
+        return ResponseEntity.ok(new RegistrationResponseDTO(user.getId(), user.getName(), user.getEmail(), token));
     }
 }

@@ -1,4 +1,4 @@
-package com.app.movie.DTO;
+package com.app.movie.DTO.auth;
 
 public record LoginResponseDTO(
         Long id,
