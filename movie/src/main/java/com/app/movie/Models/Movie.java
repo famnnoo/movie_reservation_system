@@ -33,6 +33,7 @@ public class Movie {
 
     @Min(1)
     private int totalSeats;
+
     private LocalDateTime createdAt;
 
     @PrePersist

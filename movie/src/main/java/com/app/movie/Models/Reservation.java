@@ -35,7 +35,6 @@ public class Reservation {
     @NotNull
     private LocalDateTime reservationDate;
 
-    @NotNull
     private LocalDateTime createdAt;
 
     @PrePersist
