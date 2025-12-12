@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -17,15 +19,21 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<RegistrationResponseDTO> register(
-            @Valid @RequestBody UserDTO userDTO) {
-        return ResponseEntity.ok(authService.register(userDTO));
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(
-            @Valid @RequestBody LoginRequestDTO loginRequestDTO) {
-        return ResponseEntity.ok(authService.login(loginRequestDTO));
+    @PostMapping("/register")
+    public ResponseEntity<RegistrationResponseDTO> register(@RequestBody UserDTO userDTO) {
+        return ResponseEntity.ok(authService.registerUser(userDTO));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        String newJwt = authService.refreshJwt(refreshToken);
+        return ResponseEntity.ok(Map.of("token", newJwt));
     }
 }
+
