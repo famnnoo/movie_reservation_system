@@ -26,4 +26,7 @@ public class MovieDTO {
 
     @Min(1)
     private int totalSeats;
+
+    @NotBlank
+    private String imagePath;
 }

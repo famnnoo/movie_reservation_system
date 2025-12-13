@@ -14,4 +14,5 @@ public class MovieResponseDTO {
     private int durationMinutes;
     private LocalDate releaseDate;
     private int totalSeats;
+    private String imagePath;
 }

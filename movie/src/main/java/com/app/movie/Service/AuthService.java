@@ -82,8 +82,6 @@ public class AuthService {
     @Transactional
     public String createRefreshToken(User user) {
         refreshTokenRepository.deleteByUserId(user.getId());
-
-        // Create a new token
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())

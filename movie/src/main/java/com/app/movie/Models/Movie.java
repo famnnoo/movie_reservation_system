@@ -36,6 +36,9 @@ public class Movie {
 
     private LocalDateTime createdAt;
 
+    private String imagePath;
+
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
