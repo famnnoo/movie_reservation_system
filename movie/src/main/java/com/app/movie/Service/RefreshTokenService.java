@@ -6,29 +6,34 @@ import com.app.movie.Repositories.RefreshTokenRepository;
 import com.app.movie.Repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public String createRefreshToken(User user) {
-        RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
-                .orElse(RefreshToken.builder()
-                        .user(user)
-                        .build());
 
-        refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setExpiryDate(LocalDateTime.now().plusDays(7));
+        refreshTokenRepository.deleteByUserId(user.getId());
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString())
+                .expiryDate(LocalDateTime.now().plusDays(7))
+                .build();
 
         refreshTokenRepository.save(refreshToken);
-
         return refreshToken.getToken();
     }
+
+
 
 
     public boolean isValid(RefreshToken token) {
@@ -36,6 +41,6 @@ public class RefreshTokenService {
     }
 
     public void deleteByUser(User user) {
-        refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.deleteByUserId(user.getId());
     }
 }

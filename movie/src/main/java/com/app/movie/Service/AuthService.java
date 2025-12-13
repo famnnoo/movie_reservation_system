@@ -14,6 +14,7 @@ import com.app.movie.Security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -77,15 +79,21 @@ public class AuthService {
         return new LoginResponseDTO(user.getId(), user.getName(), user.getEmail(), token, refreshToken);
     }
 
+    @Transactional
     public String createRefreshToken(User user) {
+        refreshTokenRepository.deleteByUserId(user.getId());
+
+        // Create a new token
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
                 .expiryDate(LocalDateTime.now().plusDays(7))
                 .build();
+
         refreshTokenRepository.save(refreshToken);
         return refreshToken.getToken();
     }
+
 
     public String refreshJwt(String refreshTokenStr) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenStr)
