@@ -1,42 +1,52 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import api from '@/plugins/axios'
 
-export const useMovieStore = defineStore('movies', {
-  state: () => ({
-    movies: [],
-    loading: false,
-    error: null,
-  }),
-  actions: {
-    async fetchMovies () {
-      this.loading = true
-      this.error = null
-      try {
-        const res = await api.get('/movies')
-        const moviesWithImages = await Promise.all(
-          res.data.map(async movie => {
-            let posterUrl = ''
-            try {
-              const imgRes = await api.get(`/movies/${movie.id}/image`, { responseType: 'blob' })
-              posterUrl = URL.createObjectURL(imgRes.data)
-            } catch (error) {
-              console.error(`Failed to load image for movie ${movie.id}`, error)
-              posterUrl = ''
-            }
+export const useMovieStore = defineStore('movies', () => {
+  const movies = ref([])
+  const loading = ref(false)
+  const error = ref('')
 
-            return {
-              ...movie,
-              poster: posterUrl,
-            }
-          }),
-        )
+  const fetchMovies = async () => {
+    loading.value = true
+    error.value = null
 
-        this.movies = moviesWithImages
-      } catch (error) {
-        this.error = error
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+    try {
+      const res = await api.get('/movies')
+
+      const moviesWithImages = await Promise.all(
+        res.data.map(async movie => {
+          let poster = ''
+
+          try {
+            const imgRes = await api.get(
+              `/movies/${movie.id}/image`,
+              { responseType: 'blob' },
+            )
+            poster = URL.createObjectURL(imgRes.data)
+          } catch {
+            console.warn(`Image load failed for movie ${movie.id}`)
+          }
+
+          return {
+            ...movie,
+            poster,
+          }
+        }),
+      )
+
+      movies.value = moviesWithImages
+    } catch (error) {
+      error.value = error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    movies,
+    loading,
+    error,
+    fetchMovies,
+  }
 })

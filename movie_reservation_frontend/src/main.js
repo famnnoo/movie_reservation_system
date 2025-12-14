@@ -17,7 +17,6 @@ registerPlugins(app)
 
 app.mount('#app')
 
-// Auto-login and fetch movies after mounting
 const authStore = useAuthStore()
 const movieStore = useMovieStore()
 
@@ -25,7 +24,7 @@ async function initApp () {
   const token = localStorage.getItem('token')
   if (token) {
     authStore.token = token
-    authStore.user = {} // optional: decode JWT to get user info
+    authStore.user = {}
     try {
       await movieStore.fetchMovies()
     } catch (error) {
