@@ -1,7 +1,7 @@
 <template>
   <v-app-bar flat>
     <v-container class="d-flex align-center">
-    <v-spacer />
+      <v-spacer />
       <v-btn to="/repertoire" variant="text">Repertoire</v-btn>
       <v-spacer />
       <v-btn to="/coming-soon" variant="text">To Come</v-btn>

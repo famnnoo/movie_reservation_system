@@ -2,37 +2,28 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { registerPlugins } from '@/plugins'
 import { useAuthStore } from '@/stores/authStore'
-import { useMovieStore } from '@/stores/movieStore'
 
 import App from './App.vue'
 
 import vuetify from './plugins/vuetify'
 import router from './router'
+import { useUserStore } from './stores/userStore'
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.use(vuetify)
 registerPlugins(app)
 
+const authStore = useAuthStore()
+const userStore = useUserStore()
+
 app.mount('#app')
 
-const authStore = useAuthStore()
-const movieStore = useMovieStore()
-
 async function initApp () {
-  const token = localStorage.getItem('token')
-  if (token) {
-    authStore.token = token
-    authStore.user = {}
-    try {
-      await movieStore.fetchMovies()
-    } catch (error) {
-      console.error('Failed to fetch movies', error)
-    }
-  } else {
-    router.push('/Login')
-  }
+  await authStore.initAuth()
+  await userStore.fetchUser()
 }
 
 initApp()

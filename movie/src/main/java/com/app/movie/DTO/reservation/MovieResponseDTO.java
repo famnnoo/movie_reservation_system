@@ -2,6 +2,8 @@ package com.app.movie.DTO.reservation;
 
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,4 +17,5 @@ public class MovieResponseDTO {
     private LocalDate releaseDate;
     private int totalSeats;
     private String imagePath;
+    private List<LocalDateTime> displayTimes;
 }

@@ -2,11 +2,14 @@ package com.app.movie.Service;
 
 import com.app.movie.DTO.reservation.MovieDTO;
 import com.app.movie.DTO.reservation.MovieResponseDTO;
+import com.app.movie.Models.DisplayTime;
 import com.app.movie.Models.Movie;
+import com.app.movie.Repositories.DisplayTimeRepository;
 import com.app.movie.Repositories.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,7 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
     private final String uploadDir = "images/movies/";
+    private final DisplayTimeRepository displayTimeRepository;
 
     public List<MovieResponseDTO> getAllMovies() {
         return movieRepository.findAll().stream()
@@ -39,6 +43,17 @@ public class MovieService {
                 .build();
         Movie saved = movieRepository.save(movie);
         return convertToResponseDTO(saved);
+    }
+
+    public void addDisplayTime(Long movieId, LocalDateTime startTime) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+        DisplayTime displayTime = new DisplayTime();
+        displayTime.setMovie(movie);
+        displayTime.setStartTime(startTime);
+
+        displayTimeRepository.save(displayTime);
     }
 
     public String uploadMovieImage(Long movieId, MultipartFile file) throws IOException {
@@ -77,7 +92,17 @@ public class MovieService {
                 .releaseDate(movie.getReleaseDate())
                 .totalSeats(movie.getTotalSeats())
                 .imagePath(movie.getImagePath())
+                .displayTimes(
+                movie.getDisplayTimes() == null
+                        ? List.of()
+                        : movie.getDisplayTimes()
+                        .stream()
+                        .map(DisplayTime::getStartTime)
+                        .toList()
+        )
+
                 .build();
     }
+
 }
 

@@ -11,6 +11,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Component
 public class MovieSeeder implements CommandLineRunner {
@@ -24,7 +25,7 @@ public class MovieSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         for (int i = 1; i <= 10; i++) {
-            // Create movie
+            // Create movie DTO
             MovieDTO dto = new MovieDTO();
             dto.setTitle("Movie " + i);
             dto.setDescription("Description for movie " + i);
@@ -32,19 +33,25 @@ public class MovieSeeder implements CommandLineRunner {
             dto.setReleaseDate(LocalDate.of(2025, 12, i));
             dto.setTotalSeats(100);
 
+            // Save movie
             MovieResponseDTO saved = movieService.createMovie(dto);
 
             // Load image from resources/static
-            InputStream is = new ClassPathResource("static/cat" + i + ".png").getInputStream();
+            String filename = "cat" + i + ".png";
+            InputStream is = new ClassPathResource("static/" + filename).getInputStream();
             MultipartFile file = new MockMultipartFile(
                     "file",
-                    "cat" + i + ".png", // keep the original filename
+                    filename, // use the original filename
                     "image/png",
                     is
             );
 
             // Upload image for the movie
             movieService.uploadMovieImage(saved.getId(), file);
+            movieService.addDisplayTime(saved.getId(), LocalDateTime.of(2025, 12, i, 11, 30));
+            movieService.addDisplayTime(saved.getId(), LocalDateTime.of(2025, 12, i, 15, 15));
+            movieService.addDisplayTime(saved.getId(), LocalDateTime.of(2025, 12, i, 19, 45));
+
         }
     }
 }

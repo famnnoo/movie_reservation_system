@@ -40,6 +40,10 @@
         </dependency>
 
         <dependency>
+            <groupId></groupId>
+            <artifactId>hibernate-</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
             <version>0.11.5</version>

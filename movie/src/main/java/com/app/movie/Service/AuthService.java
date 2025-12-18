@@ -76,7 +76,7 @@ public class AuthService {
         String token = jwtTokenProvider.generateToken(user.getEmail(), roles);
         String refreshToken = createRefreshToken(user);
 
-        return new LoginResponseDTO(user.getId(), user.getName(), user.getEmail(), token, refreshToken);
+        return new LoginResponseDTO(user.getId(), user.getName(), user.getEmail(), token, refreshToken, roles);
     }
 
     @Transactional

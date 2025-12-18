@@ -5,8 +5,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.*;
 
 @Entity
 @Data
@@ -33,6 +35,13 @@ public class Movie {
 
     @Min(1)
     private int totalSeats;
+
+    @OneToMany(
+            mappedBy = "movie",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<DisplayTime> displayTimes = new ArrayList<>();
 
     private LocalDateTime createdAt;
 

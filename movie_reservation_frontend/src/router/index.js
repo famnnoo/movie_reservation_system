@@ -1,35 +1,55 @@
-/**
- * router/index.ts
- *
- * Automatic routes for `./src/pages/*.vue`
- */
-
-import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
-import { routes } from 'vue-router/auto-routes'
+import Admin from '@/pages/Admin.vue'
+import Home from '@/pages/Home.vue'
+import Login from '@/pages/Login.vue'
+import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
+
+const routes = [
+  {
+    path: '/Login',
+    name: 'Login',
+    component: Login,
+  },
+  {
+    path: '/',
+    name: 'Home',
+    component: Home,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { requiresAuth: true, role: 'ADMIN' },
+  },
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: setupLayouts(routes),
+  history: createWebHistory(),
+  routes,
 })
 
-// Workaround for https://github.com/vitejs/vite/issues/11804
-router.onError((err, to) => {
-  if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
-    if (localStorage.getItem('vuetify:dynamic-reload')) {
-      console.error('Dynamic import error, reloading page did not fix it', err)
-    } else {
-      console.log('Reloading page to fix dynamic import error')
-      localStorage.setItem('vuetify:dynamic-reload', 'true')
-      location.assign(to.fullPath)
-    }
-  } else {
-    console.error(err)
+router.beforeEach(async to => {
+  const authStore = useAuthStore()
+  const userStore = useUserStore()
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return '/Login'
   }
-})
 
-router.isReady().then(() => {
-  localStorage.removeItem('vuetify:dynamic-reload')
+  if (to.path === '/Login' && authStore.isAuthenticated) {
+    return '/'
+  }
+
+  if (to.meta.role) {
+    if (!userStore.user) {
+      await userStore.fetchUser()
+    }
+    if (!authStore.hasRole(to.meta.role)) {
+      return '/'
+    }
+  }
 })
 
 export default router
