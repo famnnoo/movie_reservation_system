@@ -2,6 +2,8 @@ package com.app.movie.Service;
 
 
 import com.app.movie.DTO.AvailableSeatsDTO;
+import com.app.movie.Models.ReservationSeatNumber;
+import com.app.movie.Repositories.DisplayTimeRepository;
 import com.app.movie.Repositories.MovieRepository;
 import com.app.movie.Repositories.ReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,27 +17,23 @@ public class SeatService {
 
     private final MovieRepository movieRepository;
     private final ReservationRepository reservationRepository;
+    private final DisplayTimeRepository displayTimeRepository;
 
-    public AvailableSeatsDTO getAvailableSeats(Long movieId) {
+    public AvailableSeatsDTO getAvailableSeats(Long displayTimeId) {
+        var displayTime = displayTimeRepository.findById(displayTimeId)
+                .orElseThrow(() -> new RuntimeException("DisplayTime not found"));
 
-        var movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+        int totalSeats = displayTime.getMovie().getTotalSeats();
+        List<String> allSeats = generateSeats(totalSeats);
 
-        // 1. Generate all seats based on totalSeats
-        List<String> allSeats = generateSeats(movie.getTotalSeats());
-
-        // 2. Get reserved seats
-        List<String> reserved = reservationRepository.findByMovieId(movieId).stream()
+        List<String> reservedSeats = reservationRepository.findByDisplayTimeId(displayTimeId).stream()
                 .flatMap(r -> r.getSeatNumbers().stream())
+                .map(ReservationSeatNumber::getSeatNumbers)
                 .toList();
 
-        // 3. Remove reserved from all seats
-        List<String> available = allSeats.stream()
-                .filter(seat -> !reserved.contains(seat))
-                .toList();
-
-        return new AvailableSeatsDTO(movieId, available);
+        return new AvailableSeatsDTO(displayTime.getMovie().getId(), allSeats, reservedSeats);
     }
+
 
     private List<String> generateSeats(int totalSeats) {
         List<String> seats = new java.util.ArrayList<>(totalSeats);

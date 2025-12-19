@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Admin from '@/pages/Admin.vue'
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
+import SeatMap from '@/pages/SeatMap.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 
@@ -23,6 +24,17 @@ const routes = [
     component: Admin,
     meta: { requiresAuth: true, role: 'ADMIN' },
   },
+  {
+    path: '/seatmap/:movieId/:displayTimeId',
+    name: 'SeatMap',
+    component: SeatMap,
+    props: route => ({
+      movieId: Number(route.params.movieId),
+      displayTimeId: Number(route.params.displayTimeId),
+      movieTitle: route.query.title || '',
+    }),
+  },
+
 ]
 
 const router = createRouter({

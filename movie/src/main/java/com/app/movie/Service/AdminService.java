@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -120,13 +121,18 @@ public class AdminService {
     // ---------------- HELPERS ----------------
 
     private ReservationResponseDTO convertToReservationResponseDTO(Reservation reservation) {
+        Set<String> seats = reservation.getSeatNumbers().stream()
+                .map(rsn -> rsn.getSeatNumbers()) // extract the seat string
+                .collect(Collectors.toSet());
+
         return ReservationResponseDTO.builder()
                 .id(reservation.getId())
                 .movieId(reservation.getMovie().getId())
-                .seatNumbers(reservation.getSeatNumbers())
+                .seatNumbers(seats) // now it's Set<String>
                 .reservationDate(reservation.getReservationDate())
                 .build();
     }
+
 
     private MovieResponseDTO convertToMovieResponseDTO(Movie movie) {
         return MovieResponseDTO.builder()

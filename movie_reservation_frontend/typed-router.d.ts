@@ -24,6 +24,7 @@ declare module 'vue-router/auto-routes' {
     '/Login': RouteRecordInfo<'/Login', '/Login', Record<never, never>, Record<never, never>>,
     '/PlaceReservation': RouteRecordInfo<'/PlaceReservation', '/PlaceReservation', Record<never, never>, Record<never, never>>,
     '/Register': RouteRecordInfo<'/Register', '/Register', Record<never, never>, Record<never, never>>,
+    '/SeatMap': RouteRecordInfo<'/SeatMap', '/SeatMap', Record<never, never>, Record<never, never>>,
     '/ToCome': RouteRecordInfo<'/ToCome', '/ToCome', Record<never, never>, Record<never, never>>,
   }
 
@@ -60,6 +61,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/Register.vue': {
       routes: '/Register'
+      views: never
+    }
+    'src/pages/SeatMap.vue': {
+      routes: '/SeatMap'
       views: never
     }
     'src/pages/ToCome.vue': {

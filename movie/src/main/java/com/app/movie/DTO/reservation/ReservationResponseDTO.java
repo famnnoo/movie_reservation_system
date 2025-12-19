@@ -1,6 +1,7 @@
 package com.app.movie.DTO.reservation;
 
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -11,6 +12,7 @@ import java.util.Set;
 public class ReservationResponseDTO {
     private Long id;
     private Long movieId;
+    private Long displayTimeId;
     private Set<String> seatNumbers;
     private LocalDateTime reservationDate;
 }

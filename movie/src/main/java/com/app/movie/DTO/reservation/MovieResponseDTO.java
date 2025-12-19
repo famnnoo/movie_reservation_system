@@ -1,9 +1,12 @@
 package com.app.movie.DTO.reservation;
 
+import com.app.movie.Models.DisplayTime;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+
 
 @Data
 @NoArgsConstructor
@@ -17,5 +20,10 @@ public class MovieResponseDTO {
     private LocalDate releaseDate;
     private int totalSeats;
     private String imagePath;
-    private List<LocalDateTime> displayTimes;
+    private List<com.app.movie.DTO.reservation.DisplayTimeResponseDTO> displayTimes;
+
+    private String genre;
+    private Set<String> cinemas;
+
+
 }

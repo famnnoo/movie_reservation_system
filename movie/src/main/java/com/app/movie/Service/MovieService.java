@@ -1,5 +1,6 @@
 package com.app.movie.Service;
 
+import com.app.movie.DTO.reservation.DisplayTimeResponseDTO;
 import com.app.movie.DTO.reservation.MovieDTO;
 import com.app.movie.DTO.reservation.MovieResponseDTO;
 import com.app.movie.Models.DisplayTime;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -77,10 +79,9 @@ public class MovieService {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new RuntimeException("Movie not found"));
 
-        if (movie.getImagePath() == null) throw new RuntimeException("No image for this movie");
-
-        Path filePath = Paths.get(uploadDir + movie.getImagePath());
-        return Files.readAllBytes(filePath);
+        // Prepend the folder path here
+        Path imagePath = Paths.get("images/movies", movie.getImagePath());
+        return Files.readAllBytes(imagePath);
     }
 
     private MovieResponseDTO convertToResponseDTO(Movie movie) {
@@ -92,15 +93,27 @@ public class MovieService {
                 .releaseDate(movie.getReleaseDate())
                 .totalSeats(movie.getTotalSeats())
                 .imagePath(movie.getImagePath())
+                .genre(movie.getGenre())
+                .cinemas(
+                        movie.getCinemas() == null
+                                ? Set.of()
+                                : movie.getCinemas()
+                                .stream()
+                                .map(cinema -> cinema.getName())
+                                .collect(Collectors.toSet())
+                )
                 .displayTimes(
-                movie.getDisplayTimes() == null
-                        ? List.of()
-                        : movie.getDisplayTimes()
-                        .stream()
-                        .map(DisplayTime::getStartTime)
-                        .toList()
-        )
-
+                        movie.getDisplayTimes() == null
+                                ? List.of()
+                                : movie.getDisplayTimes()
+                                .stream()
+                                .map(dt -> DisplayTimeResponseDTO.builder()
+                                        .id(dt.getId())
+                                        .time(dt.getStartTime())
+                                        .build()
+                                )
+                                .toList()
+                )
                 .build();
     }
 

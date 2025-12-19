@@ -2,10 +2,7 @@ package com.app.movie.DTO.reservation;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Set;
 
@@ -14,8 +11,9 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class ReservationCreateDTO {
+
     @NotNull
-    private Long movieId;
+    private Long displayTimeId;
 
     @NotEmpty
     private Set<String> seatNumbers;

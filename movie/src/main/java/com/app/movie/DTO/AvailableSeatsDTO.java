@@ -8,4 +8,5 @@ import java.util.List;
 public class AvailableSeatsDTO {
     private Long movieId;
     private List<String> availableSeats;
+    private List<String> reservedSeats;
 }

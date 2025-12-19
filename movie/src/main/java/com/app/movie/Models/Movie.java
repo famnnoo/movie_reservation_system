@@ -36,16 +36,18 @@ public class Movie {
     @Min(1)
     private int totalSeats;
 
-    @OneToMany(
-            mappedBy = "movie",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<DisplayTime> displayTimes = new ArrayList<>();
-
     private LocalDateTime createdAt;
 
     private String imagePath;
+
+    private String genre;
+
+    @ManyToMany(mappedBy = "movies", fetch = FetchType.EAGER)
+    private Set<Cinema> cinemas = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie")
+    private List<DisplayTime> displayTimes = new ArrayList<>();
+
 
 
     @PrePersist

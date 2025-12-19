@@ -2,12 +2,10 @@ package com.app.movie.Models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -16,6 +14,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class Reservation {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,14 +27,17 @@ public class Reservation {
     @NotNull
     private Movie movie;
 
-    @ElementCollection
+    @ManyToOne
     @NotNull
-    private Set<String> seatNumbers; //  ["A1", "A2", "B1"]
+    private DisplayTime displayTime; // New: tie reservation to a specific showtime
 
     @NotNull
     private LocalDateTime reservationDate;
 
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ReservationSeatNumber> seatNumbers = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
