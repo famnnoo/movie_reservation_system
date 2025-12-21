@@ -90,6 +90,9 @@ public class DatabaseSeeder implements CommandLineRunner {
         };
         Random random = new Random();
 
+        // Standard seat layout: 10 rows (A-J) x 15 seats per row = 150 total seats
+        final int TOTAL_SEATS = 150;
+
         for (int i = 0; i < movieFiles.size(); i++) {
             Path movieFile = movieFiles.get(i);
 
@@ -105,10 +108,14 @@ public class DatabaseSeeder implements CommandLineRunner {
             }
             movie.setGenre(String.join(",", genres));
 
-            movie.setDurationMinutes(90 + i);
-            movie.setTotalSeats(50 + i);
+            movie.setDurationMinutes(90 + (i * 10) + random.nextInt(30)); // 90-210 minutes range
+            movie.setTotalSeats(TOTAL_SEATS); // All movies now have standardized 150 seats
             movie.setReleaseDate(LocalDate.now().minusDays((i + 1) * 10));
             movie.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+            
+            // Generate realistic IMDb rating between 5.0 and 9.5
+            double imdbRating = 5.0 + (random.nextDouble() * 4.5);
+            movie.setImdbRating(Math.round(imdbRating * 10.0) / 10.0); // Round to 1 decimal
 
             // Store only the filename
             movie.setImagePath(movieFile.getFileName().toString());
@@ -173,46 +180,78 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedReservations() {
-        List<User> users = userRepository.findAll();
-        List<Movie> movies = movieRepository.findAll();
-        Random random = new Random();
-        List<DisplayTime> displayTimes = displayTimeRepository.findAll();
-
-        for (int i = 0; i < 50; i++) {
-            Reservation reservation = new Reservation();
-
-            User user = users.get(random.nextInt(users.size()));
-            Movie movie = movies.get(random.nextInt(movies.size()));
-
-            // Pick a random DisplayTime for this movie
-            List<DisplayTime> movieDisplayTimes = displayTimes.stream()
-                    .filter(dt -> dt.getMovie().getId().equals(movie.getId()))
-                    .toList();
-            DisplayTime displayTime = movieDisplayTimes.get(random.nextInt(movieDisplayTimes.size()));
-
-            reservation.setUser(user);
-            reservation.setMovie(movie);
-            reservation.setDisplayTime(displayTime);
-
-            int daysOffset = random.nextInt(60) - 30;
-            int hoursOffset = random.nextInt(24);
-            reservation.setReservationDate(LocalDateTime.now().plusDays(daysOffset).plusHours(hoursOffset));
-
-            reservation.setSeatNumbers(new HashSet<>());
-            int seatsCount = 1 + random.nextInt(5);
-            for (int s = 0; s < seatsCount; s++) {
-                char row = (char) ('A' + random.nextInt(10));
-                int seatNum = 1 + random.nextInt(15);
-                String seatLabel = String.valueOf(row + seatNum);
-
-                ReservationSeatNumber seatNumber = new ReservationSeatNumber();
-                seatNumber.setSeatNumbers(seatLabel);
-                seatNumber.setReservation(reservation);
-                reservation.getSeatNumbers().add(seatNumber);
+    /**
+     * Generate all seat numbers matching the standardized layout:
+     * 10 rows (A-J) x 15 seats per row = 150 total seats
+     * This matches the seat structure in SeatService.
+     */
+    private List<String> generateAllSeats() {
+        List<String> seats = new ArrayList<>();
+        for (char row = 'A'; row <= 'J'; row++) {
+            for (int num = 1; num <= 15; num++) {
+                seats.add(row + String.valueOf(num));
             }
+        }
+        return seats;
+    }
 
-            reservationRepository.save(reservation);
+    /**
+     * Seed reservations for display times.
+     * Creates 1-3 reservations per display time, with each reservation having 1-4 seats.
+     * Properly tracks taken seats to avoid double-booking.
+     * Works with the new seat structure: A1-J15 (150 seats total).
+     */
+    private void seedReservations() {
+
+        if (reservationRepository.count() > 0) return;
+
+        List<User> users = userRepository.findAll();
+        List<DisplayTime> displayTimes = displayTimeRepository.findAll();
+        Random random = new Random();
+
+        for (DisplayTime displayTime : displayTimes) {
+
+            // Track seats already taken for this specific display time
+            Set<String> takenSeats = new HashSet<>();
+            List<String> allSeats = generateAllSeats(); // Generate all 150 seats (A1-J15)
+            Collections.shuffle(allSeats); // Randomize seat selection
+
+            // Create 1-3 reservations per display time
+            int reservationsForDisplay = 1 + random.nextInt(3);
+
+            for (int r = 0; r < reservationsForDisplay; r++) {
+
+                Reservation reservation = new Reservation();
+                User user = users.get(random.nextInt(users.size()));
+
+                reservation.setUser(user);
+                reservation.setMovie(displayTime.getMovie());
+                reservation.setDisplayTime(displayTime);
+                reservation.setReservationDate(
+                        LocalDateTime.now().minusDays(random.nextInt(30))
+                );
+
+                reservation.setSeatNumbers(new HashSet<>());
+
+                // Each reservation gets 1-4 seats
+                int seatsCount = 1 + random.nextInt(4);
+
+                for (int s = 0; s < seatsCount && !allSeats.isEmpty(); s++) {
+                    String seat = allSeats.remove(0); // Get next available seat
+                    takenSeats.add(seat);
+
+                    ReservationSeatNumber seatNumber = new ReservationSeatNumber();
+                    seatNumber.setSeatNumbers(seat);
+                    seatNumber.setReservation(reservation);
+                    reservation.getSeatNumbers().add(seatNumber);
+                }
+
+                // Only save if at least one seat was reserved
+                if (!reservation.getSeatNumbers().isEmpty()) {
+                    reservationRepository.save(reservation);
+                }
+            }
         }
     }
+
 }

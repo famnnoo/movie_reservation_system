@@ -12,7 +12,11 @@ import java.util.Set;
 public class ReservationResponseDTO {
     private Long id;
     private Long movieId;
+    private String movieTitle;
+    private String movieGenre;
+    private String movieImagePath;
     private Long displayTimeId;
-    private Set<String> seatNumbers;
+    private LocalDateTime displayTime;
+    private Set<String> seats;
     private LocalDateTime reservationDate;
 }

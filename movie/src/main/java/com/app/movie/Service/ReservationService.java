@@ -82,11 +82,18 @@ public class ReservationService {
                 .map(ReservationSeatNumber::getSeatNumbers)
                 .collect(Collectors.toSet());
 
+        Movie movie = reservation.getMovie();
+        DisplayTime displayTime = reservation.getDisplayTime();
+
         return ReservationResponseDTO.builder()
                 .id(reservation.getId())
-                .movieId(reservation.getMovie().getId())
-                .displayTimeId(reservation.getDisplayTime().getId())
-                .seatNumbers(seats)
+                .movieId(movie.getId())
+                .movieTitle(movie.getTitle())
+                .movieGenre(movie.getGenre())
+                .movieImagePath(movie.getImagePath())
+                .displayTimeId(displayTime.getId())
+                .displayTime(displayTime.getStartTime())
+                .seats(seats)
                 .reservationDate(reservation.getReservationDate())
                 .build();
     }

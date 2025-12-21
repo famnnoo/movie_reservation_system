@@ -42,6 +42,8 @@ public class Movie {
 
     private String genre;
 
+    private Double imdbRating; // IMDb rating (e.g., 7.5)
+
     @ManyToMany(mappedBy = "movies", fetch = FetchType.EAGER)
     private Set<Cinema> cinemas = new HashSet<>();
 

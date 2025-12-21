@@ -25,7 +25,17 @@ public class MovieController {
 
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public List<MovieResponseDTO> getAllMovies() {
+    public List<MovieResponseDTO> getAllMovies(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String cinema,
+            @RequestParam(required = false) String date
+    ) {
+        // If any filter is provided, use filtering; otherwise return all
+        if (search != null || genre != null || location != null || cinema != null || date != null) {
+            return movieService.filterMovies(search, genre, location, cinema, date);
+        }
         return movieService.getAllMovies();
     }
 

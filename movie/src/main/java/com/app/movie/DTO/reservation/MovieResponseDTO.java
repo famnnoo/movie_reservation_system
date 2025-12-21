@@ -24,6 +24,8 @@ public class MovieResponseDTO {
 
     private String genre;
     private Set<String> cinemas;
+    private Set<String> locations; // Cities where movie is playing
+    private Double imdbRating; // IMDb rating
 
 
 }

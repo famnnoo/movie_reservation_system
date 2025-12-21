@@ -15,11 +15,29 @@
 
       <!-- Details -->
       <div class="movie-details">
-        <h2 class="text-h5 mb-1">{{ movie.title }}</h2>
+        <div class="d-flex align-center gap-3 mb-2">
+          <h2 class="text-h5 mb-0">{{ movie.title }}</h2>
+          <v-chip
+            v-if="movie.imdbRating"
+            color="warning"
+            variant="flat"
+            prepend-icon="mdi-star"
+            size="small"
+          >
+            {{ movie.imdbRating }} IMDb
+          </v-chip>
+        </div>
 
-        <div class="text-caption mb-3">
+        <div class="text-caption mb-2">
           {{ movie.durationMinutes }} min · Released {{ formatDate(movie.releaseDate) }}
-          Genre: {{ movie.genre }}
+        </div>
+        <div class="text-caption mb-3">
+          <v-icon size="small" class="mr-1">mdi-movie-open</v-icon>
+          {{ movie.genre }}
+          <span v-if="movie.locations && movie.locations.length > 0" class="ml-3">
+            <v-icon size="small" class="mr-1">mdi-map-marker</v-icon>
+            {{ Array.from(movie.locations).join(', ') }}
+          </span>
         </div>
         <p class="text-body-1 mb-6">{{ movie.description }}</p>
 

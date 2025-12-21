@@ -84,6 +84,64 @@ public class MovieService {
         return Files.readAllBytes(imagePath);
     }
 
+    public List<MovieResponseDTO> filterMovies(String search, String genre, String location, 
+                                               String cinema, String date) {
+        List<Movie> movies = movieRepository.findAll();
+        
+        // Apply filters
+        return movies.stream()
+                .filter(movie -> {
+                    // Search filter (title or description)
+                    if (search != null && !search.isEmpty()) {
+                        String searchLower = search.toLowerCase();
+                        boolean matchesTitle = movie.getTitle().toLowerCase().contains(searchLower);
+                        boolean matchesDesc = movie.getDescription() != null && 
+                                             movie.getDescription().toLowerCase().contains(searchLower);
+                        if (!matchesTitle && !matchesDesc) return false;
+                    }
+                    
+                    // Genre filter
+                    if (genre != null && !genre.isEmpty() && !genre.equalsIgnoreCase("all")) {
+                        if (movie.getGenre() == null || 
+                            !movie.getGenre().toLowerCase().contains(genre.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // Location filter (city)
+                    if (location != null && !location.isEmpty() && !location.equalsIgnoreCase("all")) {
+                        boolean hasLocation = movie.getCinemas().stream()
+                                .anyMatch(c -> c.getLocation() != null && 
+                                             c.getLocation().getCity().equalsIgnoreCase(location));
+                        if (!hasLocation) return false;
+                    }
+                    
+                    // Cinema filter
+                    if (cinema != null && !cinema.isEmpty() && !cinema.equalsIgnoreCase("all")) {
+                        boolean hasCinema = movie.getCinemas().stream()
+                                .anyMatch(c -> c.getName().equalsIgnoreCase(cinema));
+                        if (!hasCinema) return false;
+                    }
+                    
+                    // Date filter (has display time on this date)
+                    if (date != null && !date.isEmpty()) {
+                        try {
+                            LocalDateTime targetDate = LocalDateTime.parse(date + "T00:00:00");
+                            boolean hasDisplayTime = movie.getDisplayTimes().stream()
+                                    .anyMatch(dt -> dt.getStartTime().toLocalDate()
+                                                     .equals(targetDate.toLocalDate()));
+                            if (!hasDisplayTime) return false;
+                        } catch (Exception e) {
+                            // Invalid date format, skip filter
+                        }
+                    }
+                    
+                    return true;
+                })
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private MovieResponseDTO convertToResponseDTO(Movie movie) {
         return MovieResponseDTO.builder()
                 .id(movie.getId())
@@ -94,12 +152,22 @@ public class MovieService {
                 .totalSeats(movie.getTotalSeats())
                 .imagePath(movie.getImagePath())
                 .genre(movie.getGenre())
+                .imdbRating(movie.getImdbRating())
                 .cinemas(
                         movie.getCinemas() == null
                                 ? Set.of()
                                 : movie.getCinemas()
                                 .stream()
                                 .map(cinema -> cinema.getName())
+                                .collect(Collectors.toSet())
+                )
+                .locations(
+                        movie.getCinemas() == null
+                                ? Set.of()
+                                : movie.getCinemas()
+                                .stream()
+                                .filter(cinema -> cinema.getLocation() != null)
+                                .map(cinema -> cinema.getLocation().getCity())
                                 .collect(Collectors.toSet())
                 )
                 .displayTimes(
