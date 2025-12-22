@@ -27,10 +27,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // Disable CSRF (using JWT tokens instead)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // WebSocket endpoint
+                        .requestMatchers("/app/**").permitAll() // WebSocket messages
+                        .requestMatchers("/topic/**").permitAll() // WebSocket subscriptions
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/movies/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/reservations/**").hasRole("USER")
@@ -49,6 +52,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

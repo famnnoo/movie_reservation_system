@@ -27,6 +27,14 @@
         <div class="seat-sample vip"></div>
         <span>VIP</span>
       </div>
+      <div class="legend-item">
+        <div class="seat-sample held-by-me"></div>
+        <span>Your Hold (5 min)</span>
+      </div>
+      <div class="legend-item">
+        <div class="seat-sample held-by-other"></div>
+        <span>Held by Others</span>
+      </div>
     </div>
 
     <!-- Screen -->
@@ -62,7 +70,8 @@
           v-for="seat in row"
           :key="seat.seatNumber"
           :class="getSeatClass(seat)"
-          :disabled="seat.reserved"
+          :disabled="isSeatDisabled(seat)"
+          :title="getSeatTooltip(seat)"
           @click="toggleSeat(seat.seatNumber)"
         >
           {{ seat.seatNumber }}
@@ -88,10 +97,11 @@
 
 <script setup>
 
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import AppHeader from '@/components/AppHeader.vue'
   import api from '@/plugins/axios'
+  import websocketService from '@/services/websocketService'
 
   const route = useRoute()
   const movieId = route.params.movieId
@@ -100,8 +110,10 @@
 
   const allSeats = ref([])
   const selectedSeats = ref([])
+  const heldSeats = ref(new Map()) // Map of seatNumber -> { userId, expiresAt }
   const rows = ref(10)
   const seatsPerRow = ref(15)
+  const countdownInterval = ref(null)
 
   // Organize seats into rows
   const seatRows = computed(() => {
@@ -129,11 +141,57 @@
     // Add status class
     if (seat.reserved) {
       classes.push('reserved')
+    } else if (heldSeats.value.has(seat.seatNumber)) {
+      const hold = heldSeats.value.get(seat.seatNumber)
+      const currentUserId = parseInt(localStorage.getItem('userId'))
+      if (hold.userId === currentUserId) {
+        classes.push('held-by-me')
+      } else {
+        classes.push('held-by-other')
+      }
     } else if (selectedSeats.value.includes(seat.seatNumber)) {
       classes.push('selected')
     }
 
     return classes
+  }
+
+  function getSeatTooltip(seat) {
+    if (seat.reserved) {
+      return 'Already reserved'
+    }
+    if (heldSeats.value.has(seat.seatNumber)) {
+      const hold = heldSeats.value.get(seat.seatNumber)
+      const currentUserId = parseInt(localStorage.getItem('userId'))
+      if (hold.userId === currentUserId) {
+        const remaining = getTimeRemaining(hold.expiresAt)
+        return `Your hold expires in ${remaining}`
+      } else {
+        return 'Held by another user'
+      }
+    }
+    return 'Click to select'
+  }
+
+  function getTimeRemaining(expiresAt) {
+    const now = new Date()
+    const expires = new Date(expiresAt)
+    const diff = Math.max(0, Math.floor((expires - now) / 1000))
+    
+    const minutes = Math.floor(diff / 60)
+    const seconds = diff % 60
+    
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  function isSeatDisabled(seat) {
+    if (seat.reserved) return true
+    if (heldSeats.value.has(seat.seatNumber)) {
+      const hold = heldSeats.value.get(seat.seatNumber)
+      const currentUserId = parseInt(localStorage.getItem('userId'))
+      return hold.userId !== currentUserId
+    }
+    return false
   }
 
   function toggleSeat(seatNumber) {
@@ -158,6 +216,63 @@
       console.error('Failed to fetch seats', error)
     }
   }
+
+  // WebSocket connection (uncomment after npm install)
+  
+  async function connectWebSocket() {
+    try {
+      await websocketService.connect()
+      
+      websocketService.subscribeToSeats(displayTimeId, (update) => {
+        console.log('Seat update received:', update)
+        handleSeatUpdate(update)
+      })
+    } catch (error) {
+      console.error('WebSocket connection failed:', error)
+    }
+  }
+
+  function handleSeatUpdate(update) {
+    const currentUserId = parseInt(localStorage.getItem('userId'))
+    
+    switch (update.status) {
+      case 'HELD':
+        heldSeats.value.set(update.seatNumber, {
+          userId: update.userId,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+        })
+        break
+      case 'AVAILABLE':
+        heldSeats.value.delete(update.seatNumber)
+        // Remove from selected if it was held by another user
+        if (update.userId !== currentUserId) {
+          selectedSeats.value = selectedSeats.value.filter(s => s !== update.seatNumber)
+        }
+        break
+      case 'RESERVED':
+        heldSeats.value.delete(update.seatNumber)
+        // Mark seat as reserved in allSeats
+        allSeats.value = allSeats.value.map(seat => {
+          if (seat.seatNumber === update.seatNumber) {
+            return { ...seat, reserved: true }
+          }
+          return seat
+        })
+        break
+    }
+  }
+
+  function startCountdownTimer() {
+    countdownInterval.value = setInterval(() => {
+      const now = new Date()
+      heldSeats.value.forEach((hold, seatNumber) => {
+        if (new Date(hold.expiresAt) <= now) {
+          heldSeats.value.delete(seatNumber)
+        }
+      })
+    }, 1000)
+  }
+  
 
   async function reserveSeats() {
     try {
@@ -192,7 +307,21 @@
     }
   }
 
-  onMounted(fetchSeats)
+  onMounted(async () => {
+    await fetchSeats()
+  
+    await connectWebSocket()
+    startCountdownTimer()
+  })
+
+  onBeforeUnmount(() => {
+    // Cleanup
+    if (countdownInterval.value) {
+      clearInterval(countdownInterval.value)
+    }
+  
+    websocketService.unsubscribeFromSeats(displayTimeId)
+  })
 </script>
 
 <style scoped>
@@ -268,6 +397,16 @@
 .seat-sample.vip {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   border-color: #c92a2a;
+}
+
+.seat-sample.held-by-me {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  border-color: #e65100;
+}
+
+.seat-sample.held-by-other {
+  background: #9e9e9e;
+  border-color: #616161;
 }
 
 /* Screen */
@@ -418,6 +557,32 @@
 
 .seat.reserved:hover {
   transform: none;
+}
+
+/* Held by current user */
+.seat.held-by-me {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+  color: white !important;
+  border-color: #e65100 !important;
+  animation: pulse 2s infinite;
+}
+
+/* Held by another user */
+.seat.held-by-other {
+  background: #9e9e9e !important;
+  color: white !important;
+  border-color: #616161 !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 152, 0, 0.8);
+  }
 }
 
 /* Reservation Summary */

@@ -139,10 +139,23 @@
       result[date].push({
         id: dt.id,
         label: timeLabel,
+        timestamp: dateObj.getTime() // Add timestamp for sorting
       })
     }
 
-    return Object.fromEntries(Object.entries(result).slice(0, 4))
+    // Sort times within each date
+    Object.keys(result).forEach(date => {
+      result[date].sort((a, b) => a.timestamp - b.timestamp)
+    })
+
+    // Sort dates and take first 4
+    const sortedDates = Object.keys(result).sort()
+    const limitedResult = {}
+    sortedDates.slice(0, 4).forEach(date => {
+      limitedResult[date] = result[date]
+    })
+
+    return limitedResult
   })
 
   function formatDate (date) {

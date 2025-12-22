@@ -1,6 +1,7 @@
 <template>
   <app-header />
-
+  <div class="spacer">
+  </div>
   <v-container class="mt-8">
     <!-- Search and Filter Section -->
     <v-card class="mb-6" elevation="2">
@@ -206,7 +207,30 @@
 
       // Call API with filters
       const response = await api.get('/movies', { params })
-      filteredMovies.value = response.data
+      
+      // Load images for filtered movies (same as movieStore does)
+      const moviesWithImages = await Promise.all(
+        response.data.map(async movie => {
+          let poster = ''
+          
+          try {
+            const imgRes = await api.get(
+              `/movies/${movie.id}/image`,
+              { responseType: 'blob' }
+            )
+            poster = URL.createObjectURL(imgRes.data)
+          } catch {
+            console.warn(`Image load failed for movie ${movie.id}`)
+          }
+          
+          return {
+            ...movie,
+            poster
+          }
+        })
+      )
+      
+      filteredMovies.value = moviesWithImages
     } catch (error) {
       console.error('Failed to filter movies:', error)
       filteredMovies.value = []
@@ -250,5 +274,8 @@
 
 .gap-3 {
   gap: 12px;
+}
+.spacer {
+  height: 64px;
 }
 </style>

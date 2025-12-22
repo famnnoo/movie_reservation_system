@@ -23,19 +23,25 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final DisplayTimeRepository displayTimeRepository;
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public DatabaseSeeder(LocationRepository locationRepository,
                           CinemaRepository cinemaRepository,
                           MovieRepository movieRepository,
                           DisplayTimeRepository displayTimeRepository,
                           ReservationRepository reservationRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          RoleRepository roleRepository,
+                          org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.locationRepository = locationRepository;
         this.cinemaRepository = cinemaRepository;
         this.movieRepository = movieRepository;
         this.displayTimeRepository = displayTimeRepository;
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -164,11 +170,30 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (userRepository.count() > 0) return;
         Random random = new Random();
 
+        // Get roles
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("USER role not found"));
+        Role adminRole = roleRepository.findByName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+
+        // Create admin user
+        User admin = User.builder()
+                .name("Admin User")
+                .email("admin@example.com")
+                .passwordHash(passwordEncoder.encode("admin123")) // Properly hashed password
+                .roles(new HashSet<>(Arrays.asList(userRole, adminRole)))
+                .build();
+        userRepository.save(admin);
+        System.out.println("✅ Created admin user: admin@example.com / admin123");
+
+        // Create regular users
         for (int i = 1; i <= 50; i++) {
-            User user = new User();
-            user.setName("User " + i);
-            user.setEmail("user" + i + "@example.com");
-            user.setPasswordHash("password"); // hash in real app
+            User user = User.builder()
+                    .name("User " + i)
+                    .email("user" + i + "@example.com")
+                    .passwordHash(passwordEncoder.encode("password")) // Properly hashed
+                    .roles(new HashSet<>(Collections.singletonList(userRole)))
+                    .build();
 
             // Random createdAt / updatedAt in past 60 days
             int daysOffset = random.nextInt(60);

@@ -7,8 +7,11 @@ import com.app.movie.Repositories.MovieRepository;
 import com.app.movie.Repositories.ReservationRepository;
 import com.app.movie.Repositories.DisplayTimeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,14 +26,21 @@ public class ReservationService {
     private final MovieRepository movieRepository;
     private final DisplayTimeRepository displayTimeRepository;
 
+    /**
+     * Create a reservation with proper concurrency control to prevent double-booking.
+     * Uses pessimistic locking and database constraints to ensure data integrity under high load.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ReservationResponseDTO createReservation(ReservationCreateDTO dto) {
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        DisplayTime displayTime = displayTimeRepository.findById(dto.getDisplayTimeId())
+        // Lock the display time row to prevent concurrent modifications
+        DisplayTime displayTime = displayTimeRepository.findByIdWithLock(dto.getDisplayTimeId())
                 .orElseThrow(() -> new RuntimeException("DisplayTime not found"));
 
         // Collect all already reserved seats for this movie session
+        // This query is protected by the lock on display time
         Set<String> takenSeats = reservationRepository.findByDisplayTimeId(displayTime.getId()).stream()
                 .flatMap(r -> r.getSeatNumbers().stream())
                 .map(ReservationSeatNumber::getSeatNumbers)
@@ -51,22 +61,30 @@ public class ReservationService {
                 .reservationDate(LocalDateTime.now())
                 .build();
 
-        // Convert seat strings to ReservationSeatNumber
+        // Convert seat strings to ReservationSeatNumber with display time reference
         Set<ReservationSeatNumber> seatEntities = dto.getSeatNumbers().stream()
                 .map(seat -> {
                     ReservationSeatNumber rsn = new ReservationSeatNumber();
                     rsn.setSeatNumbers(seat);
                     rsn.setReservation(reservation);
+                    rsn.setDisplayTime(displayTime); // Critical: links seat to display time
                     return rsn;
                 })
                 .collect(Collectors.toSet());
 
         reservation.setSeatNumbers(seatEntities);
 
-        // Save reservation with seats
-        Reservation saved = reservationRepository.save(reservation);
-
-        return convertToResponseDTO(saved);
+        try {
+            // Save reservation with seats
+            // Database constraint ensures uniqueness of (display_time_id, seat_numbers)
+            Reservation saved = reservationRepository.save(reservation);
+            return convertToResponseDTO(saved);
+            
+        } catch (DataIntegrityViolationException e) {
+            // This catches the case where constraint was violated
+            // (e.g., two requests tried to book the same seat simultaneously)
+            throw new RuntimeException("One or more seats were just booked by another user. Please try different seats.");
+        }
     }
 
     public List<ReservationResponseDTO> getUserReservations() {
